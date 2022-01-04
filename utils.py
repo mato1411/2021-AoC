@@ -1,5 +1,6 @@
 import os
 import shutil
+from heapq import heappop, heappush
 
 import numpy as np
 
@@ -79,6 +80,83 @@ def read_input(filename='example.txt', sep='\n'):
     with open(filename) as f:
         inputs = f.read().strip().split(sep)
     return inputs
+
+
+def get_adjacent_data(a, node):
+    x, y = node
+    x_max = a.shape[0]
+    y_max = a.shape[1]
+    dirs = get_directions_possible_of_xy(x, y, x_max, y_max, diag=False)
+    adjacent_data = {}
+    for d in dirs:
+        adjacent_data[(x + d[0], y + d[1])] = a[x + d[0]][y + d[1]]
+    return adjacent_data
+
+
+def a_star_no_h(a, start, end):
+    not_visited = [(0, start)]
+    visited = {start}
+
+    while not_visited:
+        distance, node = heappop(not_visited)
+
+        if node == end:
+            return distance
+
+        for neighbor, n_distance in get_adjacent_data(a, node).items():
+            if neighbor not in visited:
+                heappush(not_visited, (distance + n_distance, neighbor))
+
+        visited.add(node)
+
+
+def get_path_a_star(a, start, end):
+    not_visited = {start}
+    visited = set()
+    distances = {start: 0}
+    parents = {start: start}
+
+    while not_visited:
+        node = None
+
+        for n in not_visited:
+            if node is None or distances[n] < distances[node]:
+                node = n
+
+        if node is None:
+            print("No path determined")
+            return None
+
+        if node == end:
+            final_path = []
+
+            while parents[node] != node:
+                final_path.append(node)
+                node = parents[node]
+
+            final_path.append(start)
+            final_path.reverse()
+
+            return final_path
+
+        for neighbor, distance in get_adjacent_data(a, node).items():
+            if neighbor not in not_visited and neighbor not in visited:
+                not_visited.add(neighbor)
+                parents[neighbor] = node
+                distances[neighbor] = distances[node] + distance
+            else:
+                if distances[neighbor] > distances[node] + distance:
+                    distances[neighbor] = distances[node] + distance
+                    parents[neighbor] = node
+                    if neighbor in visited:
+                        visited.remove(neighbor)
+                        not_visited.add(neighbor)
+
+        not_visited.remove(node)
+        visited.add(node)
+
+    print("No path determined")
+    return None
 
 
 def create_dirs_and_templates():
